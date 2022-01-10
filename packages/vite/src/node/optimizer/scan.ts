@@ -419,22 +419,29 @@ function esbuildScanPlugin(
       build.onLoad({ filter: JS_TYPES_RE }, ({ path: id }) => {
         let ext = path.extname(id).slice(1)
         if (ext === 'mjs') ext = 'js'
+        let loader = ext as Loader
 
         let contents = fs.readFileSync(id, 'utf-8')
         if (ext.endsWith('x') && config.esbuild && config.esbuild.jsxInject) {
           contents = config.esbuild.jsxInject + `\n` + contents
+        } else {
+          //检测内容是否是react
+          if(contents.includes('react')) {
+            loader = ({ ts: 'tsx', js: 'jsx' })[ext] as Loader
+          }
         }
 
         if (contents.includes('import.meta.glob')) {
           return transformGlob(contents, id, config.root, ext as Loader).then(
             (contents) => ({
-              loader: ext as Loader,
+              loader,
               contents
             })
           )
         }
         return {
-          loader: ext as Loader,
+          // loader: ext as Loader,
+          loader,
           contents
         }
       })
